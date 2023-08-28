@@ -1,0 +1,8 @@
+gooddata_sdk
+pandas
+numpy
+gooddata_pandas
+python-dotenv
+scikit-learn
+skforecast
+matplotlib

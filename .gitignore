@@ -2,11 +2,12 @@
 .idea
 *.iml
 
-# secrets
-templates/.env
-
 # jupyter
 templates/.ipynb_checkpoints
 
 # python
 **/__pycache__
+
+# local env
+.env
+.venv
