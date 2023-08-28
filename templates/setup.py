@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from skforecast.ForecasterAutoreg import ForecasterAutoreg
 from sklearn.metrics import mean_squared_error
+from sklearn.cluster import AgglomerativeClustering
+from numpy import where, unique
+import numpy as np
+
 
 class InsightEnvironment:
     def __init__(self, insight_id: str, workspace: str | None = None):
@@ -21,15 +25,41 @@ class InsightEnvironment:
 
 def describe_data(env: InsightEnvironment):
     gp = GoodPandas(host=env.host, token=env.token)
-    insight = gp.sdk.insights.get_insight(env.workspace_id, env.insight_id)
     df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
     df.describe()
+
+def show_points(env: InsightEnvironment):
+    gp = GoodPandas(host=env.host, token=env.token)
+    df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
+    dim_y = df.columns.values[0]
+    dim_x = df.columns.values[1]
+    plt.scatter(df[dim_x], df[dim_y])
+    plt.show()
+    
+def cluster(env: InsightEnvironment, custer_count: int = 3):
+    gp = GoodPandas(host=env.host, token=env.token)
+    df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
+    dim_y = df.columns.values[0]
+    dim_x = df.columns.values[1]
+    X = np.column_stack((df[dim_x],df[dim_y]))
+
+    model = AgglomerativeClustering(n_clusters=custer_count)
+
+    yhat = model.fit_predict(X)
+
+    clusters = unique(yhat)
+    for cluster in clusters:
+        # get row indexes for samples with this cluster
+        row_ix = where(yhat == cluster)
+        # create scatter of these samples
+        plt.scatter(X[row_ix, 0], X[row_ix, 1])
+        # show the plot
+    plt.show()
 
 
 def show_train_data(env: InsightEnvironment):
     gp = GoodPandas(host=env.host, token=env.token)
     df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
-    df = df.asfreq('H')
     df = df.asfreq('H')
 
     # number of steps we will try to predict
