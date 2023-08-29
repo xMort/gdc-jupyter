@@ -6,3 +6,4 @@ python-dotenv
 scikit-learn
 skforecast
 matplotlib
+adtk

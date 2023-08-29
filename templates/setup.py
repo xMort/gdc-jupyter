@@ -1,15 +1,16 @@
 import os
 from dotenv import load_dotenv
 from gooddata_pandas import GoodPandas
-from pandas import DataFrame
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from skforecast.ForecasterAutoreg import ForecasterAutoreg
 from sklearn.metrics import mean_squared_error
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import Birch
+from sklearn.svm import OneClassSVM
 from numpy import where, unique
 import numpy as np
-
+from adtk.data import validate_series
+from adtk.detector import PersistAD
 
 class InsightEnvironment:
     def __init__(self, insight_id: str, workspace: str | None = None):
@@ -36,14 +37,14 @@ def show_points(env: InsightEnvironment):
     plt.scatter(df[dim_x], df[dim_y])
     plt.show()
     
-def cluster(env: InsightEnvironment, custer_count: int = 3):
+def cluster(env: InsightEnvironment, cluster_count: int = 3):
     gp = GoodPandas(host=env.host, token=env.token)
     df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
     dim_y = df.columns.values[0]
     dim_x = df.columns.values[1]
     X = np.column_stack((df[dim_x],df[dim_y]))
 
-    model = AgglomerativeClustering(n_clusters=custer_count)
+    model = Birch(threshold=0.01, n_clusters=cluster_count)
 
     yhat = model.fit_predict(X)
 
@@ -55,6 +56,21 @@ def cluster(env: InsightEnvironment, custer_count: int = 3):
         plt.scatter(X[row_ix, 0], X[row_ix, 1])
         # show the plot
     plt.show()
+
+def show_outliers(env: InsightEnvironment):
+    clf_svm = OneClassSVM(gamma='auto')
+    gp = GoodPandas(host=env.host, token=env.token)
+    df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
+    df = df.asfreq('H')
+
+    clf_svm.fit(X_train)
+    y_pred_svm = clf_svm.predict(X_test)
+
+    pred['svm'] = y_pred_svm
+    pred['svm_pred'] = np.where(pred['svm'] == -1, 1, 0)
+
+    y_pred_svm = pred['svm_pred']
+    print("SVM Precision:", precision_score(y_test, y_pred_svm))
 
 
 def show_train_data(env: InsightEnvironment):
@@ -76,6 +92,33 @@ def show_train_data(env: InsightEnvironment):
     data_test[dim_y].plot(ax=ax, label='test')
     ax.legend()
 
+
+def anomalies(env: InsightEnvironment):
+
+
+    gp = GoodPandas(host=env.host, token=env.token)
+    df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
+    df = df.asfreq('H')
+
+    seasonal_ad = PersistAD(c=3, side="both")
+
+    dim_y = df.columns.values[0]
+
+    data = df[dim_y].interpolate(method='linear')
+
+    validate_series(data)
+
+    anomalies = seasonal_ad.fit_detect(data)
+
+    fig, ax = plt.subplots(figsize=(7, 2.5))
+    data.plot(ax=ax, label='train')
+
+    # Highlight the anomalies on the original data series
+    anomaly_indices = anomalies[anomalies == True].index
+    ax.scatter(anomaly_indices, data[anomaly_indices], color='red', label='anomalies')
+
+
+    ax.legend()
 
 def predict(env: InsightEnvironment):
     gp = GoodPandas(host=env.host, token=env.token)
