@@ -155,4 +155,4 @@ def predict(env: InsightEnvironment):
         left_index=True,
         right_index=True,
         how='outer'
-        ).to_dict()
+        ).reset_index().to_dict()
