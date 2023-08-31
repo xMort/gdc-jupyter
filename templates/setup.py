@@ -149,10 +149,14 @@ def predict(env: InsightEnvironment):
 
 
     interpolated_data = df[dim_y].interpolate(metho='linear')
-    return pd.merge(
+    result = pd.merge(
         predictions.to_frame(),
         interpolated_data.rename('real'),
         left_index=True,
         right_index=True,
         how='outer'
         ).reset_index().to_dict()
+    
+    for key, value in result['index'].items():
+        result['index'][key] = str(value)
+    return result
