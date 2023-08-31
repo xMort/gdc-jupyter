@@ -11,6 +11,7 @@ from numpy import where, unique
 import numpy as np
 from adtk.data import validate_series
 from adtk.detector import PersistAD
+import pandas as pd
 
 class InsightEnvironment:
     def __init__(self, insight_id: str, workspace: str | None = None):
@@ -56,21 +57,6 @@ def cluster(env: InsightEnvironment, cluster_count: int = 3):
         plt.scatter(X[row_ix, 0], X[row_ix, 1])
         # show the plot
     plt.show()
-
-def show_outliers(env: InsightEnvironment):
-    clf_svm = OneClassSVM(gamma='auto')
-    gp = GoodPandas(host=env.host, token=env.token)
-    df = gp.data_frames(env.workspace_id).for_insight(env.insight_id)
-    df = df.asfreq('H')
-
-    clf_svm.fit(X_train)
-    y_pred_svm = clf_svm.predict(X_test)
-
-    pred['svm'] = y_pred_svm
-    pred['svm_pred'] = np.where(pred['svm'] == -1, 1, 0)
-
-    y_pred_svm = pred['svm_pred']
-    print("SVM Precision:", precision_score(y_test, y_pred_svm))
 
 
 def show_train_data(env: InsightEnvironment):
@@ -159,5 +145,14 @@ def predict(env: InsightEnvironment):
         y_true = data_test[dim_y],
         y_pred = predictions
     )
-
     print(f"Test error (mse): {error_mse}")
+
+
+    interpolated_data = df[dim_y].interpolate(metho='linear')
+    return pd.merge(
+        predictions.to_frame(),
+        interpolated_data,
+        left_index=True,
+        right_index=True,
+        how='outer'
+        ).to_dict()
