@@ -151,7 +151,7 @@ def predict(env: InsightEnvironment):
     interpolated_data = df[dim_y].interpolate(metho='linear')
     return pd.merge(
         predictions.to_frame(),
-        interpolated_data,
+        interpolated_data.rename('real'),
         left_index=True,
         right_index=True,
         how='outer'
