@@ -15,6 +15,7 @@ import simplejson as json
 
 
 class InsightAnalyzer:
+
     def __init__(self, insight_id: str, workspace: str | None = None):
         load_dotenv()
         self.host = os.getenv("HOST")
@@ -71,7 +72,14 @@ class InsightAnalyzer:
 
         fig, ax = plt.subplots(figsize=(7, 2.5))
         data.plot(ax=ax, label='train')
-        ax.scatter(anomalies[anomalies].index, data[anomalies], color='red', label='anomalies')
+        anomalies = anomalies.fillna(False)
+
+        # Filter the data using the anomalies binary mask to get the anomaly values.
+        anomaly_values = data[anomalies]
+
+        # Use scatter to plot the anomalies as points.
+        ax.scatter(anomaly_values.index, anomaly_values, color='red', label='anomalies')
+
         ax.legend()
 
 
