@@ -1,4 +1,5 @@
 gooddata_sdk
+simplejson
 pandas
 numpy
 gooddata_pandas
@@ -8,4 +9,3 @@ skforecast
 matplotlib
 adtk
 statsmodels
-simplejson
