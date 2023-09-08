@@ -94,7 +94,6 @@ class PredictionAnalyzer(InsightAnalyzer):
 
     def predict(self, steps: int = 50, conf_interval: int = 90):
         df = self._fetch_data()
-        df = df.asfreq("H")
 
         dim_y = df.columns.values[0]
         # Seed for reproductibility
@@ -155,6 +154,21 @@ class PredictionAnalyzer(InsightAnalyzer):
             "predictions": data[['lower_bound', 'pred', 'upper_bound']].values.tolist()
         }
         return json.dumps(result_dict, ignore_nan=True)
+
+    def push_to_server(self, prediction: DataFrame, data: DataFrame):
+
+        data.rename(columns={data.columns[0]: 'origin'}, inplace=True)
+
+        data = pd.merge(prediction, data, left_index=True, right_index=True, how="outer")
+
+        result_dict = {
+            "attribute": data.index.strftime('%Y-%m-%d %H:%M:%S').to_list(),
+            "origin": data['origin'].tolist(),
+            "predictions": data[['lower_bound', 'pred', 'upper_bound']].values.tolist()
+        }
+
+        result_json = json.dumps(result_dict, ignore_nan=True)
+        print(result_json)
 
     def show_data(self):
         df = self._fetch_data().asfreq("H")
