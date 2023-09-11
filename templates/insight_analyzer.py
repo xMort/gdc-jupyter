@@ -186,15 +186,17 @@ class PredictionAnalyzer(InsightAnalyzer):
         }
 
         result_json = json.dumps(result_dict, ignore_nan=True)
-
-        try:
-            req = urllib.request.Request('http://localhost:8080/set?id=' + self.result_id)
-            req.add_header('Content-Type', 'application/json; charset=utf-8')
-            json_data_bytes = result_json.encode('utf-8')
-            urllib.request.urlopen(req, json_data_bytes)
-        except json.JSONDecodeError as e:
-            print("Could not send the JSON to the server")
-            return f'Error decoding JSON data: {str(e)}'
+        if self.result_id is not None:
+            try:
+                req = urllib.request.Request('http://localhost:8080/set?id=' + self.result_id)
+                req.add_header('Content-Type', 'application/json; charset=utf-8')
+                json_data_bytes = result_json.encode('utf-8')
+                urllib.request.urlopen(req, json_data_bytes)
+            except json.JSONDecodeError as e:
+                print("Could not send the JSON to the server")
+                return f'Error decoding JSON data: {str(e)}'
+        else:
+            print(result_json)
 
     def show_data(self):
         df = self._fetch_data().asfreq("H")
@@ -210,6 +212,9 @@ class AnomalyAnalyzer(InsightAnalyzer):
 
     def __init__(self, insight_id: str, workspace: str | None = None):
         InsightAnalyzer.__init__(self, insight_id = insight_id, workspace = workspace)
+
+    def push_to_server(self):
+        pass
 
     def show_data(self):
         df = self._fetch_data().asfreq("H")
