@@ -12,6 +12,9 @@ from skforecast.ForecasterAutoreg import ForecasterAutoreg
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import simplejson as json
 from pandas import DataFrame
+import urllib
+from sklearn.preprocessing import MinMaxScaler
+
 
 
 class InsightAnalyzer:
@@ -45,13 +48,14 @@ class ClusterAnalyzer(InsightAnalyzer):
     def __init__(self, insight_id: str, workspace: str | None = None):
         InsightAnalyzer.__init__(self, insight_id = insight_id, workspace = workspace)
 
-    def cluster(self, cluster_count: int = 3, threshold: int = 0.05, new_df: DataFrame = None):
+    def cluster(self, cluster_count: int = 3, threshold: int = 0.05):
         df = self._fetch_data()
 
-        if new_df is not None:
-            x = np.column_stack((new_df[df.columns[1]], new_df[df.columns[0]]))
-        else:
-            x = np.column_stack((df[df.columns[1]], df[df.columns[0]]))
+        scaler = MinMaxScaler(feature_range=(0,1))
+        normalized_df = scaler.fit_transform(df)
+        normalized_df = pd.DataFrame(normalized_df, columns=df.columns)
+        x = np.column_stack((normalized_df[normalized_df.columns[0]],
+                             normalized_df[normalized_df.columns[1]]))
 
         model = Birch(threshold=threshold, n_clusters=cluster_count)
         yhat = model.fit_predict(x)
@@ -66,16 +70,30 @@ class ClusterAnalyzer(InsightAnalyzer):
             clusters.append(cluster_data)
 
         for cluster in np.unique(yhat):
-            plt.scatter(df.values[yhat == cluster, 1], df.values[yhat == cluster, 0])
+            plt.scatter(df.values[yhat == cluster, 0], df.values[yhat == cluster, 1])
         plt.show()
 
         return json.dumps({"clusters": clusters})
 
+    def push_to_server(self, yhat):
+        df = self._fetch_data()
+        clusters = []
+        for cluster in np.unique(yhat):
+            cluster_data = [
+                [x, y] for x, y in zip(
+                    df.values[yhat == cluster, 0],
+                    df.values[yhat == cluster, 1])
+            ]
+            clusters.append(cluster_data)
+
+        return json.dumps({"clusters": clusters})
+
+
     def show_data(self):
         df = self._fetch_data()
         plt.scatter(
-            df[df.columns[1]],
-            df[df.columns[0]]
+            df[df.columns[0]],
+            df[df.columns[1]]
         )
         plt.show()
 
@@ -168,7 +186,15 @@ class PredictionAnalyzer(InsightAnalyzer):
         }
 
         result_json = json.dumps(result_dict, ignore_nan=True)
-        print(result_json)
+
+        try:
+            req = urllib.request.Request('http://localhost:8080/set?id=' + self.result_id)
+            req.add_header('Content-Type', 'application/json; charset=utf-8')
+            json_data_bytes = result_json.encode('utf-8')
+            urllib.request.urlopen(req, json_data_bytes)
+        except json.JSONDecodeError as e:
+            print("Could not send the JSON to the server")
+            return f'Error decoding JSON data: {str(e)}'
 
     def show_data(self):
         df = self._fetch_data().asfreq("H")
