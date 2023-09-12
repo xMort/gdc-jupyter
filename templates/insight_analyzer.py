@@ -16,10 +16,16 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 class InsightAnalyzer:
-    def __init__(self, result_id: str, workspace: str | None = None):
+    def __init__(
+        self,
+        result_id: str,
+        workspace: str | None = None,
+        host_name: str | None = None,
+        api_token: str | None = None,
+    ):
         load_dotenv()
-        self.host = os.getenv("HOST")
-        self.token = os.getenv("TOKEN")
+        self.host = os.getenv("HOST") if host_name is None else host_name
+        self.token = os.getenv("TOKEN") if api_token is None else api_token
         self.workspace_id = os.getenv("WORKSPACE") if workspace is None else workspace
         self.result_id = result_id
         self.gp = GoodPandas(host=self.host, token=self.token)
