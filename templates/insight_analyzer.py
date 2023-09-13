@@ -109,10 +109,11 @@ class ClusterAnalyzer(InsightAnalyzer):
         df = self._fetch_data()
         clusters = []
         for cluster in np.unique(yhat):
+            cluster_indices = df.index[yhat == cluster].tolist()
             cluster_data = [
-                [int(x), int(y)]
-                for x, y in zip(
-                    df.values[yhat == cluster, 0], df.values[yhat == cluster, 1]
+                [index[0], int(x), int(y)]
+                for index, x, y in zip(
+                    cluster_indices, df.values[yhat == cluster, 0], df.values[yhat == cluster, 1]
                 )
             ]
             clusters.append(cluster_data)
