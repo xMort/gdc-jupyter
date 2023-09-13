@@ -110,7 +110,7 @@ class ClusterAnalyzer(InsightAnalyzer):
         clusters = []
         for cluster in np.unique(yhat):
             cluster_data = [
-                [x, y]
+                [int(x), int(y)]
                 for x, y in zip(
                     df.values[yhat == cluster, 0], df.values[yhat == cluster, 1]
                 )
