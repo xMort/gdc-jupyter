@@ -141,14 +141,20 @@ class ClusterAnalyzer(InsightAnalyzer):
 
 
 class ForecastAnalyzer:
-    def __init__(self, result_id: str, workspace: str | None = None):
-        load_dotenv()
-        self.host = os.getenv("HOST")
-        self.token = os.getenv("TOKEN")
-        self.workspace_id = os.getenv("WORKSPACE") if workspace is None else workspace
-        self.result_id = result_id
-        self.gp = GoodPandas(host=self.host, token=self.token)
-        self.df = None
+    def __init__(
+            self,
+            result_id: str,
+            workspace: str | None = None,
+            host_name: str | None = None,
+            api_token: str | None = None,
+    ):
+        InsightAnalyzer.__init__(
+            self,
+            result_id=result_id,
+            workspace=workspace,
+            host_name=host_name,
+            api_token=api_token
+        )
 
     def _fetch_data(self):
         if self.df is None:
