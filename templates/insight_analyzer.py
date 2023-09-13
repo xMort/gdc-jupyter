@@ -51,8 +51,20 @@ class InsightAnalyzer:
 
 
 class ClusterAnalyzer(InsightAnalyzer):
-    def __init__(self, insight_id: str, workspace: str | None = None):
-        InsightAnalyzer.__init__(self, insight_id=insight_id, workspace=workspace)
+    def __init__(
+            self,
+            result_id: str,
+            workspace: str | None = None,
+            host_name: str | None = None,
+            api_token: str | None = None,
+    ):
+        InsightAnalyzer.__init__(
+            self,
+            result_id=result_id,
+            workspace=workspace,
+            host_name=host_name,
+            api_token=api_token
+        )
 
     def cluster(self, cluster_count: int = 3, threshold: int = 0.05):
         df = self._fetch_data()
@@ -86,6 +98,13 @@ class ClusterAnalyzer(InsightAnalyzer):
 
         return json.dumps({"clusters": clusters})
 
+    def _fetch_data(self):
+        if self.df is None:
+            return self.gp.data_frames(self.workspace_id).for_exec_result_id(
+                self.result_id
+            )[0]
+        return self.df
+
     def push_to_server(self, yhat):
         df = self._fetch_data()
         clusters = []
@@ -98,7 +117,22 @@ class ClusterAnalyzer(InsightAnalyzer):
             ]
             clusters.append(cluster_data)
 
-        return json.dumps({"clusters": clusters})
+        result_json =  json.dumps({"clusters": clusters})
+
+        if self.result_id is not None:
+            print(result_json)
+            try:
+                req = urllib.request.Request(
+                    "http://localhost:8080/set?id=" + self.result_id
+                )
+                req.add_header("Content-Type", "application/json; charset=utf-8")
+                json_data_bytes = result_json.encode("utf-8")
+                urllib.request.urlopen(req, json_data_bytes)
+            except Exception as e:
+                print("Could not send the JSON to the server")
+        else:
+            print(result_json)
+
 
     def show_data(self):
         df = self._fetch_data()
