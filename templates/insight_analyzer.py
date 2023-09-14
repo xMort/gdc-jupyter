@@ -130,6 +130,7 @@ class ClusterAnalyzer(InsightAnalyzer):
                 req.add_header("Content-Type", "application/json; charset=utf-8")
                 json_data_bytes = result_json.encode("utf-8")
                 urllib.request.urlopen(req, json_data_bytes)
+                print("Success!")
             except Exception as e:
                 print("Could not send the JSON to the server")
         else:
@@ -191,7 +192,6 @@ class ForecastAnalyzer:
 
         result_json = json.dumps(result_dict).decode()
         if self.result_id is not None:
-            print(result_json)
             try:
                 req = urllib.request.Request(
                     "http://localhost:8080/set?id=" + self.result_id
@@ -199,6 +199,7 @@ class ForecastAnalyzer:
                 req.add_header("Content-Type", "application/json; charset=utf-8")
                 json_data_bytes = result_json.encode("utf-8")
                 urllib.request.urlopen(req, json_data_bytes)
+                print("Success!")
             except Exception as e:
                 print("Could not send the JSON to the server")
         else:
