@@ -98,9 +98,12 @@ class ClusterAnalyzer(InsightAnalyzer):
 
     def _fetch_data(self):
         if self.df is None:
-            self.df = self.gp.data_frames(self.workspace_id).for_exec_result_id(
+            df = self.gp.data_frames(self.workspace_id).for_exec_result_id(
                 self.result_id
             )[0]
+            if len(df.index) > 10:
+                df = df.T
+            self.df = df.T
             return self.df
         return self.df
 
