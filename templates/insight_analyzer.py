@@ -120,10 +120,9 @@ class ClusterAnalyzer(InsightAnalyzer):
             ]
             clusters.append(cluster_data)
 
-        result_json = json.dumps({"clusters": clusters})
+        result_json = json.dumps({"clusters": clusters}).decode()
 
         if self.result_id is not None:
-            print(json.loads(result_json))
             try:
                 req = urllib.request.Request(
                     "http://localhost:8080/set?id=" + self.result_id
@@ -134,7 +133,7 @@ class ClusterAnalyzer(InsightAnalyzer):
             except Exception as e:
                 print("Could not send the JSON to the server")
         else:
-            print(json.loads(result_json))
+            print(result_json)
 
 
     def show_data(self):
