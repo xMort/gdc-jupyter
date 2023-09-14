@@ -187,7 +187,7 @@ class ForecastAnalyzer:
             ].values.tolist(),
         }
 
-        result_json = json.dumps(result_dict, ignore_nan=True)
+        result_json = json.dumps(result_dict).decode()
         if self.result_id is not None:
             print(result_json)
             try:
