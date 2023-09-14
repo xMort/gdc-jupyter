@@ -4,12 +4,10 @@ from gooddata_pandas import GoodPandas
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.cluster import Birch
 from adtk.data import validate_series
 from adtk.detector import PersistAD
-from skforecast.ForecasterAutoreg import ForecasterAutoreg
-import simplejson as json
+import orjson as json
 from pandas import DataFrame
 import urllib
 from sklearn.preprocessing import MinMaxScaler
@@ -100,9 +98,10 @@ class ClusterAnalyzer(InsightAnalyzer):
 
     def _fetch_data(self):
         if self.df is None:
-            return self.gp.data_frames(self.workspace_id).for_exec_result_id(
+            self.df = self.gp.data_frames(self.workspace_id).for_exec_result_id(
                 self.result_id
             )[0]
+            return self.df
         return self.df
 
     def push_to_server(self, yhat):
@@ -118,10 +117,10 @@ class ClusterAnalyzer(InsightAnalyzer):
             ]
             clusters.append(cluster_data)
 
-        result_json =  json.dumps({"clusters": clusters})
+        result_json = json.dumps({"clusters": clusters})
 
         if self.result_id is not None:
-            print(result_json)
+            print(json.loads(result_json))
             try:
                 req = urllib.request.Request(
                     "http://localhost:8080/set?id=" + self.result_id
@@ -132,7 +131,7 @@ class ClusterAnalyzer(InsightAnalyzer):
             except Exception as e:
                 print("Could not send the JSON to the server")
         else:
-            print(result_json)
+            print(json.loads(result_json))
 
 
     def show_data(self):
