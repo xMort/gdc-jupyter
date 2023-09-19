@@ -1,4 +1,5 @@
 import os
+import requests
 from dotenv import load_dotenv
 from gooddata_pandas import GoodPandas
 import matplotlib.pyplot as plt
@@ -15,11 +16,11 @@ from sklearn.preprocessing import MinMaxScaler
 
 class InsightAnalyzer:
     def __init__(
-        self,
-        result_id: str,
-        workspace: str | None = None,
-        host_name: str | None = None,
-        api_token: str | None = None,
+            self,
+            result_id: str,
+            workspace: str | None = None,
+            host_name: str | None = None,
+            api_token: str | None = None,
     ):
         load_dotenv()
         self.host = os.getenv("HOST") if host_name is None else host_name
@@ -30,22 +31,21 @@ class InsightAnalyzer:
         self.df = None
 
     def _fetch_data(self):
-        if self.df is None:
-            df = self.gp.data_frames(self.workspace_id).for_exec_result_id(
-                self.result_id
-            )[0]
-            self.df = DataFrame(df.T.iloc[:, 0])
-        return self.df
+        return None
+
+    def _post_to_server(self, result_json, path):
+        url = f"{self.host}/api/v1/actions/workspaces/{self.workspace_id}/cache/{path}/{self.result_id}"
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.token}',
+        }
+        # sending get request and saving the response as response object
+        r = requests.post(url=url, headers=headers, data=result_json)
+        print("Success!")
 
     def get_df(self):
         return self._fetch_data()
-
-    def describe_data(self):
-        df = self._fetch_data()
-        return df.describe()
-
-    def show_data(self):
-        raise Exception("Base has no data")
 
 
 class ClusterAnalyzer(InsightAnalyzer):
@@ -56,45 +56,12 @@ class ClusterAnalyzer(InsightAnalyzer):
             host_name: str | None = None,
             api_token: str | None = None,
     ):
-        InsightAnalyzer.__init__(
-            self,
+        super().__init__(
             result_id=result_id,
             workspace=workspace,
             host_name=host_name,
             api_token=api_token
         )
-
-    def cluster(self, cluster_count: int = 3, threshold: int = 0.05):
-        df = self._fetch_data()
-
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        normalized_df = scaler.fit_transform(df)
-        normalized_df = pd.DataFrame(normalized_df, columns=df.columns)
-        x = np.column_stack(
-            (
-                normalized_df[normalized_df.columns[0]],
-                normalized_df[normalized_df.columns[1]],
-            )
-        )
-
-        model = Birch(threshold=threshold, n_clusters=cluster_count)
-        yhat = model.fit_predict(x)
-
-        clusters = []
-        for cluster in np.unique(yhat):
-            cluster_data = [
-                [x, y]
-                for x, y in zip(
-                    df.values[yhat == cluster, 0], df.values[yhat == cluster, 1]
-                )
-            ]
-            clusters.append(cluster_data)
-
-        for cluster in np.unique(yhat):
-            plt.scatter(df.values[yhat == cluster, 0], df.values[yhat == cluster, 1])
-        plt.show()
-
-        return json.dumps({"clusters": clusters})
 
     def _fetch_data(self):
         if self.df is None:
@@ -120,30 +87,17 @@ class ClusterAnalyzer(InsightAnalyzer):
             ]
             clusters.append(cluster_data)
 
-        result_json = json.dumps({"clusters": clusters}).decode()
+        data = {"clusters": clusters}
+        result_json = json.dumps(data).decode()
 
-        if self.result_id is not None:
-            try:
-                req = urllib.request.Request(
-                    "http://localhost:8080/set?id=" + self.result_id
-                )
-                req.add_header("Content-Type", "application/json; charset=utf-8")
-                json_data_bytes = result_json.encode("utf-8")
-                urllib.request.urlopen(req, json_data_bytes)
-                print("Success!")
-            except Exception as e:
-                print("Could not send the JSON to the server")
-        else:
+        try:
+            self._post_to_server(result_json, "clustering")
+        except Exception as e:
+            print("Could not send the JSON to the server printing data:")
             print(result_json)
 
 
-    def show_data(self):
-        df = self._fetch_data()
-        plt.scatter(df[df.columns[0]], df[df.columns[1]])
-        plt.show()
-
-
-class ForecastAnalyzer:
+class ForecastAnalyzer(InsightAnalyzer):
     def __init__(
             self,
             result_id: str,
@@ -151,8 +105,7 @@ class ForecastAnalyzer:
             host_name: str | None = None,
             api_token: str | None = None,
     ):
-        InsightAnalyzer.__init__(
-            self,
+        super().__init__(
             result_id=result_id,
             workspace=workspace,
             host_name=host_name,
@@ -172,9 +125,6 @@ class ForecastAnalyzer:
             self.df = tmp
         return self.df
 
-    def get_df(self):
-        return self._fetch_data()
-
     def push_to_server(self, prediction: DataFrame, data: DataFrame):
         data.rename(columns={data.columns[0]: "origin"}, inplace=True)
 
@@ -191,19 +141,10 @@ class ForecastAnalyzer:
         }
 
         result_json = json.dumps(result_dict).decode()
-        if self.result_id is not None:
-            try:
-                req = urllib.request.Request(
-                    "http://localhost:8080/set?id=" + self.result_id
-                )
-                req.add_header("Content-Type", "application/json; charset=utf-8")
-                json_data_bytes = result_json.encode("utf-8")
-                urllib.request.urlopen(req, json_data_bytes)
-                print("Success!")
-            except Exception as e:
-                print("Could not send the JSON to the server")
-        else:
-            print(result_json)
+        try:
+            self._post_to_server(result_json, "forecast")
+        except Exception as e:
+            print("Could not post to the server.")
 
 
 class AnomalyAnalyzer(InsightAnalyzer):
@@ -214,8 +155,7 @@ class AnomalyAnalyzer(InsightAnalyzer):
             host_name: str | None = None,
             api_token: str | None = None,
     ):
-        InsightAnalyzer.__init__(
-            self,
+        super().__init__(
             result_id=result_id,
             workspace=workspace,
             host_name=host_name,
@@ -227,7 +167,7 @@ class AnomalyAnalyzer(InsightAnalyzer):
             tmp = self.gp.data_frames(self.workspace_id).for_exec_result_id(
                 self.result_id
             )[0]
-            if len(tmp.index) <   10:
+            if len(tmp.index) < 10:
                 tmp = tmp.T
             tmp.index = pd.to_datetime([''.join(i) for i in tmp.index])
             tmp.index = pd.to_datetime(tmp.index)
@@ -243,44 +183,8 @@ class AnomalyAnalyzer(InsightAnalyzer):
         }
 
         result_json = json.dumps(result_dict).decode()
-        if self.result_id is not None:
-            print(result_json)
-            try:
-                req = urllib.request.Request(
-                    "http://localhost:8080/set?id=" + self.result_id
-                )
-                req.add_header("Content-Type", "application/json; charset=utf-8")
-                json_data_bytes = result_json.encode("utf-8")
-                urllib.request.urlopen(req, json_data_bytes)
-                print("Success!")
-            except Exception as e:
-                print("Could not send the JSON to the server")
-        else:
-            print(result_json)
-
-    def show_data(self):
-        df = self._fetch_data().asfreq("H")
-
-        fig, ax = plt.subplots(figsize=(7, 2.5))
-        df[df.columns[0]].plot(ax=ax, label="train")
-        ax.legend()
-
-    def anomalies(self):
-        df = self._fetch_data().asfreq("H")
-        data = df[df.columns[0]].interpolate(method="linear")
-        validate_series(data)
-
-        seasonal_ad = PersistAD(c=3, side="both")
-        anomalies = seasonal_ad.fit_detect(data)
-
-        fig, ax = plt.subplots(figsize=(7, 2.5))
-        data.plot(ax=ax, label="train")
-        anomalies = anomalies.fillna(False)
-
-        # Filter the data using the anomalies binary mask to get the anomaly values.
-        anomaly_values = data[anomalies]
-
-        # Use scatter to plot the anomalies as points.
-        ax.scatter(anomaly_values.index, anomaly_values, color="red", label="anomalies")
-
-        ax.legend()
+        try:
+            self._post_to_server(result_json, "anomalyDetection")
+        except Exception as e:
+            print("Could not send the JSON to the server printing data:")
+            print(e)
