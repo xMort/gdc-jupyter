@@ -68,9 +68,9 @@ class ClusterAnalyzer(InsightAnalyzer):
             df = self.gp.data_frames(self.workspace_id).for_exec_result_id(
                 self.result_id
             )[0]
-            if len(df.index) > 10:
+            if len(df.index) < 10:
                 df = df.T
-            self.df = df.T
+            self.df = df
             return self.df
         return self.df
 
