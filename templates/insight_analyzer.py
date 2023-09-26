@@ -128,8 +128,8 @@ class ForecastAnalyzer(InsightAnalyzer):
     def push_to_server(self, prediction: DataFrame, data: DataFrame):
         data.rename(columns={data.columns[0]: "origin"}, inplace=True)
 
-        data = pd.merge(
-            prediction, data, left_index=True, right_index=True, how="outer"
+        data = pd.concat(
+            [data, prediction]
         )
 
         result_dict = {
