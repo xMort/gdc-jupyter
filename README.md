@@ -15,7 +15,7 @@ cd gdc-jupyter
 Create `.env` file (`touch .env`) and use it to set up environment with your Tiger API token in the following way: 
 
 ```
-TOKEN=<your Tiger API token for https://gartner.fast-track.stg11.panther.intgdc.com/>
+TOKEN=<your Tiger API token>
 ```
                                                                                                                   
 Run the following commands to build the environment:
@@ -45,7 +45,7 @@ jupyter notebook
 
 You should be able to access the notebooks at http://127.0.0.1:8686/jupyter/tree?token=60c1661cc408f978c309d04157af55c9588ff9557c9380e4fb50785750703da6. 
 
-The notebooks should be available from dashboards in https://gartner.fast-track.stg11.panther.intgdc.com as well now.
+The notebooks should be available from dashboards with enabled notebook support as well now.
                
 ## Appendix
 
