@@ -17,7 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 class InsightAnalyzer:
     def __init__(
             self,
-            result_id: str,
+            result_id: str | None = None,
             workspace: str | None = None,
             host_name: str | None = None,
             api_token: str | None = None,
@@ -26,7 +26,7 @@ class InsightAnalyzer:
         self.host = os.getenv("HOST") if host_name is None else host_name
         self.token = os.getenv("TOKEN") if api_token is None else api_token
         self.workspace_id = os.getenv("WORKSPACE") if workspace is None else workspace
-        self.result_id = result_id
+        self.result_id = os.getenv("RESULT_ID") if result_id is None else result_id
         self.gp = GoodPandas(host=self.host, token=self.token)
         self.df = None
 
@@ -51,7 +51,7 @@ class InsightAnalyzer:
 class ClusterAnalyzer(InsightAnalyzer):
     def __init__(
             self,
-            result_id: str,
+            result_id: str | None = None,
             workspace: str | None = None,
             host_name: str | None = None,
             api_token: str | None = None,
@@ -100,7 +100,7 @@ class ClusterAnalyzer(InsightAnalyzer):
 class ForecastAnalyzer(InsightAnalyzer):
     def __init__(
             self,
-            result_id: str,
+            result_id: str | None = None,
             workspace: str | None = None,
             host_name: str | None = None,
             api_token: str | None = None,
@@ -150,7 +150,7 @@ class ForecastAnalyzer(InsightAnalyzer):
 class AnomalyAnalyzer(InsightAnalyzer):
     def __init__(
             self,
-            result_id: str,
+            result_id: str | None = None,
             workspace: str | None = None,
             host_name: str | None = None,
             api_token: str | None = None,
